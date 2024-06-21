@@ -43,13 +43,7 @@ func main() {
 		command := input[0]
 		args := strings.Join(input[1:], " ")
 		switch command {
-		case "lpwd":
-			cwd, err := os.Getwd()
-			if err != nil {
-				fmt.Println("Unable to determine working directory")
-				continue
-			}
-			fmt.Println(cwd)
+		// Local commands
 		case "lcd":
 			if len(input) > 1 {
 				err := os.Chdir(input[1])
@@ -58,15 +52,12 @@ func main() {
 				}
 			}
 		case "lls":
-			var dir string
-			if len(input) == 1 {
-				cwd, err := os.Getwd()
-				if err != nil {
-					fmt.Println("Unable to list directory contents")
-					continue
-				}
-				dir = cwd
-			} else {
+			dir, err := os.Getwd()
+			if err != nil {
+				fmt.Println("Unable to list directory contents")
+				continue
+			}
+			if len(input) > 1 {
 				dir = input[1] // How does GO handle spaces in the dir argument?
 			}
 			dirContents, err := os.ReadDir(dir)
@@ -74,44 +65,76 @@ func main() {
 				fmt.Println("Unable to list directory contents")
 				continue
 			}
-			for _, item := range dirContents {
-				fmt.Println(item)
+			for _, entry := range dirContents {
+				fmt.Println(entry)
 			}
-		case "pwd":
-			_, err := io.WriteString(conn, command+"\n")
+		case "lpwd":
+			cwd, err := os.Getwd()
 			if err != nil {
-				fmt.Println("Communication error with server")
+				fmt.Println("Unable to determine working directory")
+				continue
 			}
-			err = handleResponse(netReader)
-			if err != nil {
-				fmt.Println("Unable to display remote working directory")
-			}
+			fmt.Println(cwd)
+
+		// Remote commands
 		case "cd":
-			_, err := io.WriteString(conn, command+"\n")
-			if err != nil {
-				fmt.Println("Communication error with server")
-			}
-			_, err = io.WriteString(conn, args+"\n")
+			err := sendServerCommand(conn, command, args)
 			if err != nil {
 				fmt.Println("Communication error with server")
 			}
 		case "ls":
+			err := sendServerCommand(conn, command, args)
+			if err != nil {
+				fmt.Println("Communication error with server")
+			}
+			dirContents, err := receiveServerResponse(netReader)
+			if err != nil {
+				fmt.Println("Unable to display remote working directory")
+			}
+			for _, entry := range strings.Split(*dirContents, ";") {
+				fmt.Println(entry)
+			}
+		case "pwd":
+			err := sendServerCommand(conn, command, args)
+			if err != nil {
+				fmt.Println("Communication error with server")
+			}
+			cwd, err := receiveServerResponse(netReader)
+			if err != nil {
+				fmt.Println("Unable to display remote working directory")
+			}
+			fmt.Println(*cwd)
+
+		// File transfer commands
 		case "get":
 		case "put":
 		}
 	}
 }
 
-func handleResponse(reader *bufio.Reader) error {
-	response, err := reader.ReadString('\n')
+func sendServerCommand(conn net.Conn, command string, args string) error {
+	_, err := io.WriteString(conn, command+"\n")
 	if err != nil {
 		return err
 	}
-	fmt.Print(response)
-	// for _, item := range response {
-	// 	fmt.Print(item)
-	// }
+	_, err = io.WriteString(conn, args+"\n")
+	if err != nil {
+		return err
+	}
 	return nil
+}
+
+func receiveServerResponse(reader *bufio.Reader) (*string, error) {
+	response, err := reader.ReadString('\n')
+	if err != nil {
+		return nil, err
+	}
+	return &response, nil
+	// fmt.Print(response)
+	// // for _, item := range response {
+	// // 	fmt.Print(item)
+	// // }
+	// return nil
 }
 
 // mustCopy(os.Stdout, conn)

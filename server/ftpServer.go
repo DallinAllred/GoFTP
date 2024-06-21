@@ -60,6 +60,23 @@ func handleConn(c net.Conn) {
 					_, err = io.WriteString(c, err.Error()+"\n")
 				}
 			}
+		case "ls":
+			args, _ := reader.ReadString('\n')
+			args = strings.Replace(args, "\n", "", -1)
+			dir, err := os.Getwd()
+			if err != nil {
+				_, err = io.WriteString(c, err.Error()+"\n")
+			}
+			if len(args) > 0 {
+				dir = args
+			}
+			dirContents, err := os.ReadDir(dir)
+			strContents := []string{}
+			for _, entry := range dirContents {
+				strContents = append(strContents, fmt.Sprint(entry))
+			}
+			response := strings.Join(strContents, ";")
+			_, err = io.WriteString(c, response+"\n")
 		}
 		// _, err := io.WriteString(c, time.Now().Format("15:04:05\n"))
 		// if err != nil {
