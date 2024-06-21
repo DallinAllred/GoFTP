@@ -39,7 +39,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Unable to establish connection to %s:%d\n%s\nExiting...", *host, *port, err)
 	}
-	// conn = cnxn
 	defer conn.Close()
 	netReader = bufio.NewReader(conn)
 
