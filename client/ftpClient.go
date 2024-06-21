@@ -53,6 +53,7 @@ func main() {
 		} else {
 			text = strings.Replace(text, "\n", "", -1)
 		}
+		text = strings.TrimSpace(text)
 		if text == "exit" {
 			break
 		}
