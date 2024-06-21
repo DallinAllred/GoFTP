@@ -15,20 +15,6 @@ import (
 var host = flag.String("h", "localhost", "FTP Server")
 var port = flag.Int("p", 2020, "Port number")
 
-var remoteCommands = map[string]bool{
-	"cd":  true,
-	"get": true,
-	"ls":  true,
-	"put": true,
-	"pwd": true,
-}
-
-var localCommands = map[string]bool{
-	"lcd":  true,
-	"lls":  true,
-	"lpwd": true,
-}
-
 func main() {
 	flag.Parse()
 	connString := fmt.Sprintf("%s:%d", *host, *port)
@@ -50,7 +36,6 @@ func main() {
 		} else {
 			text = strings.Replace(text, "\n", "", -1)
 		}
-		// text = strings.ToLower(text)
 		if text == "exit" {
 			break
 		}
@@ -114,66 +99,6 @@ func main() {
 		case "get":
 		case "put":
 		}
-
-		// Process local commands prior to remote commands
-		// _, local := localCommands[command]
-		// _, remote := remoteCommands[command]
-		// if local {
-		// 	switch command {
-		// 	case "lpwd":
-		// 		cwd, err := os.Getwd()
-		// 		if err != nil {
-		// 			fmt.Println("Unable to determine working directory")
-		// 			continue
-		// 		}
-		// 		fmt.Println(cwd)
-		// 	case "lcd":
-		// 		if len(input) > 1 {
-		// 			err := os.Chdir(input[1])
-		// 			if err != nil {
-		// 				fmt.Printf("%s does not exist\n", input[1])
-		// 			}
-		// 		}
-		// 	case "lls":
-		// 		var dir string
-		// 		if len(input) == 1 {
-		// 			cwd, err := os.Getwd()
-		// 			if err != nil {
-		// 				fmt.Println("Unable to list directory contents")
-		// 				continue
-		// 			}
-		// 			dir = cwd
-		// 		} else {
-		// 			dir = input[1]
-		// 		}
-		// 		dirContents, err := os.ReadDir(dir)
-		// 		if err != nil {
-		// 			fmt.Println("Unable to list directory contents")
-		// 			continue
-		// 		}
-		// 		for _, item := range dirContents {
-		// 			fmt.Println(item)
-		// 		}
-		// 	}
-		// // } else if remote {
-		// 	args := strings.Join(input[1:], "-")
-		// 	switch command {
-		// 	case "pwd":
-		// 		_, err := io.WriteString(conn, command+"\n")
-		// 		_, err = io.WriteString(conn, args+"\n")
-		// 		if err != nil {
-		// 			fmt.Println("Unable to display remote working directory")
-		// 		}
-		// 		err = handleResponse(netReader)
-		// 		if err != nil {
-		// 			fmt.Println("Unable to display remote working directory")
-		// 		}
-		// 	case "cd":
-		// 	case "ls":
-		// 	case "get":
-		// 	case "put":
-		// 	}
-		// }
 	}
 }
 
