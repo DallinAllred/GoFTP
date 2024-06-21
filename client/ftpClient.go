@@ -129,12 +129,8 @@ func receiveServerResponse(reader *bufio.Reader) (*string, error) {
 	if err != nil {
 		return nil, err
 	}
+	response = strings.Replace(response, "\n", "", -1)
 	return &response, nil
-	// fmt.Print(response)
-	// // for _, item := range response {
-	// // 	fmt.Print(item)
-	// // }
-	// return nil
 }
 
 // mustCopy(os.Stdout, conn)
