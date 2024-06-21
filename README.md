@@ -5,8 +5,7 @@ This is simple FTP-like server and client created as a practice exercise in Go.
 # Usage
 ## Server
 ```sh
-go run server/ftpServer.go -h <host> -p <port>
-# Default host: localhost
+go run server/ftpServer.go -p <port>
 # Default port: 2020
 ```
 
