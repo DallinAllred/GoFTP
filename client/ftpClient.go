@@ -154,10 +154,49 @@ func remotePwd(cmd string, args string) {
 
 // getFile copies a file from the server to the client
 func getFile(cmd string, filename string) {
+	err := sendServerCommand(conn, cmd, filename)
+	if err != nil {
+		log.Fatalln(serverErrorMsg)
+	}
+	file, err := os.Create(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+	n, err := io.Copy(file, conn)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(n, "bytes received")
+	resp, err := receiveServerResponse(netReader)
+	if err != nil {
+		log.Fatalln("Unable to display remote working directory")
+	}
+	fmt.Println(*resp)
 }
 
 // putFile sends a file to the server from the client
 func putFile(cmd string, filename string) {
+	err := sendServerCommand(conn, cmd, filename)
+	if err != nil {
+		log.Fatalln(serverErrorMsg)
+	}
+	file, err := os.Open(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+	n, err := io.Copy(conn, file)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(n, "bytes sent")
+
+	resp, err := receiveServerResponse(netReader)
+	if err != nil {
+		log.Fatalln("Unable to display remote working directory")
+	}
+	fmt.Println(*resp)
 }
 
 // sendServerCommand sends the command and arguments across the connection to the server
