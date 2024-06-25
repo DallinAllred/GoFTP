@@ -106,6 +106,42 @@ func handleConn(c net.Conn, sessionDir string) {
 			}
 			response := strings.Join(strContents, " ; ")
 			_, err = io.WriteString(c, response+"\n")
+
+		case "get":
+			fmt.Println("Sending file to client")
+			file, err := os.Open(args)
+			if err != nil {
+				_, err = io.WriteString(c, err.Error()+"\n")
+			}
+			n, err := io.Copy(c, file)
+			file.Close()
+			if err != nil {
+				_, err = io.WriteString(c, err.Error()+"\n")
+			} else {
+				_, err = io.WriteString(c, fmt.Sprintf("%d bytes received by server\n", n))
+			}
+		case "put":
+			fmt.Println("Getting file from client")
+			file, err := os.Create(args)
+			if err != nil {
+				_, err = io.WriteString(c, err.Error()+"\n")
+			}
+			var currentByte int64 = 0
+			totalBytesReceived := 0
+			bufferSize := 64
+			buffer := make([]byte, bufferSize)
+			for {
+				n, err := c.Read(buffer)
+				_, err = file.WriteAt(buffer[:n], currentByte)
+				totalBytesReceived += n
+				if err == io.EOF || n < bufferSize {
+					break
+				}
+				currentByte += int64(n)
+			}
+			file.Close()
+			fmt.Printf("%d bytes received by server\n", totalBytesReceived)
+			_, err = io.WriteString(c, fmt.Sprintf("%d bytes received by server\n", totalBytesReceived))
 		}
 	}
 	fmt.Printf("Connection with %s terminated\n", c.RemoteAddr())
