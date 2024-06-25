@@ -63,7 +63,7 @@ func main() {
 
 		function, ok := commands[command]
 		if !ok {
-			fmt.Printf("Unrecognized command: %s\n", command)
+			fmt.Printf("Unrecognized command: '%s'\n", command)
 			continue
 		}
 		function(command, args)
@@ -116,6 +116,10 @@ func remoteCD(cmd string, dir string) {
 	err := sendServerCommand(conn, cmd, dir)
 	if err != nil {
 		log.Fatalln(serverErrorMsg)
+	}
+	invalidPath, err := receiveServerResponse(netReader)
+	if *invalidPath != "" || err != nil {
+		fmt.Println("Unable to change remote directory")
 	}
 }
 

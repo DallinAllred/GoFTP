@@ -8,10 +8,15 @@ import (
 	"log"
 	"net"
 	"os"
+	"path"
+	"path/filepath"
+	"regexp"
 	"strings"
 )
 
 var port = flag.Int("p", 2020, "Port number")
+
+var fsRoots = `^(?i)\/|[A-Z]:`
 
 func main() {
 	flag.Parse()
@@ -28,11 +33,15 @@ func main() {
 			log.Print(err)
 			continue
 		}
-		go handleConn(conn)
+		sessionDir, err := os.Getwd()
+		if err != nil {
+			log.Fatal(err)
+		}
+		go handleConn(conn, sessionDir)
 	}
 }
 
-func handleConn(c net.Conn) {
+func handleConn(c net.Conn, sessionDir string) {
 	defer c.Close()
 	reader := bufio.NewReader(c)
 	for {
@@ -42,6 +51,7 @@ func handleConn(c net.Conn) {
 		}
 		command = strings.Replace(command, "\n", "", -1)
 
+		// Likely need to branch here to handle a file put from the client
 		args, err := reader.ReadString('\n')
 		if err != nil {
 			_, err = io.WriteString(c, err.Error()+"\n")
@@ -51,28 +61,35 @@ func handleConn(c net.Conn) {
 		if command == "" {
 			break
 		}
-		fmt.Printf("Command: %s\n", command)
+		fmt.Printf("%s -- Command: %s %s\n", c.RemoteAddr(), command, args)
 		switch command {
 		case "pwd":
-			var response string
-			cwd, err := os.Getwd()
-			if err != nil {
-				response = err.Error()
-			} else {
-				response = cwd
-			}
-			_, err = io.WriteString(c, response+"\n")
+			_, err = io.WriteString(c, sessionDir+"\n")
 
 		case "cd":
 			if len(args) > 0 {
-				err := os.Chdir(args)
+				proposedPath := args
+				root, err := regexp.Match(fsRoots, []byte(args))
+				if err != nil {
+					_, err = io.WriteString(c, sessionDir+"\n")
+					return
+				}
+				if !root {
+					proposedPath = path.Join(sessionDir, proposedPath)
+					proposedPath, _ = filepath.Abs(proposedPath)
+				}
+				_, err = os.Stat(proposedPath)
 				if err != nil {
 					_, err = io.WriteString(c, err.Error()+"\n")
+				} else {
+					sessionDir = proposedPath
+					_, err = io.WriteString(c, "\n")
 				}
 			}
 
 		case "ls":
-			dir, err := os.Getwd()
+			// dir, err := os.Getwd()
+			dir := sessionDir
 			if err != nil {
 				_, err = io.WriteString(c, err.Error()+"\n")
 			}
@@ -80,6 +97,9 @@ func handleConn(c net.Conn) {
 				dir = args
 			}
 			dirContents, err := os.ReadDir(dir)
+			if err != nil {
+				_, err = io.WriteString(c, err.Error()+"\n")
+			}
 			strContents := []string{}
 			for _, entry := range dirContents {
 				strContents = append(strContents, fmt.Sprint(entry))
