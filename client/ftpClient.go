@@ -162,17 +162,22 @@ func getFile(cmd string, filename string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer file.Close()
-	n, err := io.Copy(file, conn)
-	if err != nil {
-		log.Fatal(err)
+	// defer file.Close()
+	var currentByte int64 = 0
+	totalBytesReceived := 0
+	bufferSize := 64
+	buffer := make([]byte, bufferSize)
+	for {
+		n, err := conn.Read(buffer)
+		_, err = file.WriteAt(buffer[:n], currentByte)
+		totalBytesReceived += n
+		if err == io.EOF || n < bufferSize {
+			break
+		}
+		currentByte += int64(n)
 	}
-	fmt.Println(n, "bytes received")
-	resp, err := receiveServerResponse(netReader)
-	if err != nil {
-		log.Fatalln("Unable to display remote working directory")
-	}
-	fmt.Println(*resp)
+	file.Close()
+	fmt.Println(totalBytesReceived, "bytes received")
 }
 
 // putFile sends a file to the server from the client
@@ -194,7 +199,7 @@ func putFile(cmd string, filename string) {
 
 	resp, err := receiveServerResponse(netReader)
 	if err != nil {
-		log.Fatalln("Unable to display remote working directory")
+		log.Fatalln("Unable to read server response on PUT")
 	}
 	fmt.Println(*resp)
 }
