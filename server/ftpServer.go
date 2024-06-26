@@ -8,7 +8,6 @@ import (
 	"log"
 	"net"
 	"os"
-	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -75,7 +74,8 @@ func handleConn(c net.Conn, sessionDir string) {
 					return
 				}
 				if !root {
-					proposedPath = path.Join(sessionDir, proposedPath)
+					pathSegments := []string{sessionDir, proposedPath}
+					proposedPath = filepath.Join(pathSegments...)
 					proposedPath, _ = filepath.Abs(proposedPath)
 				}
 				_, err = os.Stat(proposedPath)
@@ -85,6 +85,7 @@ func handleConn(c net.Conn, sessionDir string) {
 					sessionDir = proposedPath
 					_, err = io.WriteString(c, "\n")
 				}
+				fmt.Println(sessionDir)
 			}
 
 		case "ls":
@@ -108,6 +109,9 @@ func handleConn(c net.Conn, sessionDir string) {
 			_, err = io.WriteString(c, response+"\n")
 
 		case "get":
+			if len(args) == 0 {
+				continue
+			}
 			fmt.Println("Sending file to client")
 			file, err := os.Open(args)
 			if err != nil {
@@ -115,12 +119,14 @@ func handleConn(c net.Conn, sessionDir string) {
 			}
 			n, err := io.Copy(c, file)
 			file.Close()
+			fmt.Println(n, "bytes sent")
 			if err != nil {
 				_, err = io.WriteString(c, err.Error()+"\n")
-			} else {
-				_, err = io.WriteString(c, fmt.Sprintf("%d bytes received by server\n", n))
 			}
 		case "put":
+			if len(args) == 0 {
+				continue
+			}
 			fmt.Println("Getting file from client")
 			file, err := os.Create(args)
 			if err != nil {
