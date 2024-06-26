@@ -50,7 +50,6 @@ func handleConn(c net.Conn, sessionDir string) {
 		}
 		command = strings.Replace(command, "\n", "", -1)
 
-		// Likely need to branch here to handle a file put from the client
 		args, err := reader.ReadString('\n')
 		if err != nil {
 			_, err = io.WriteString(c, err.Error()+"\n")
@@ -89,7 +88,6 @@ func handleConn(c net.Conn, sessionDir string) {
 			}
 
 		case "ls":
-			// dir, err := os.Getwd()
 			dir := sessionDir
 			if err != nil {
 				_, err = io.WriteString(c, err.Error()+"\n")
@@ -112,7 +110,6 @@ func handleConn(c net.Conn, sessionDir string) {
 			if len(args) == 0 {
 				continue
 			}
-			fmt.Println("Sending file to client")
 			file, err := os.Open(args)
 			if err != nil {
 				_, err = io.WriteString(c, err.Error()+"\n")
@@ -127,7 +124,6 @@ func handleConn(c net.Conn, sessionDir string) {
 			if len(args) == 0 {
 				continue
 			}
-			fmt.Println("Getting file from client")
 			file, err := os.Create(args)
 			if err != nil {
 				_, err = io.WriteString(c, err.Error()+"\n")
